@@ -1,0 +1,21 @@
+# Changes here will be overwritten by Copier.
+_commit: 0.28.4
+_src_path: gh:detailobsessed/copier-uv-bleeding
+author_email: ismart@gmail.com
+author_fullname: Ismar Iljazovic
+author_username: ichoosetoaccept
+cli_framework: none
+copyright_license: MIT
+project_description: Windsurf but you learn as you code
+project_name: windsurf-teacher
+project_type: app
+project_visibility: public
+publish_to_pypi: false
+repository_host: github.com
+repository_namespace: detailobsessed
+repository_provider: github.com
+use_blacksmith_runners: true
+use_ci: true
+use_polar: false
+use_semantic_release: true
+
