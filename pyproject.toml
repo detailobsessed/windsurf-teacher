@@ -191,6 +191,12 @@ output = "htmlcov/coverage.json"
 python-version = "3.14"
 python = ".venv"
 
+[[tool.ty.overrides]]
+include = ["tests/test_mcp_server.py"]
+
+[tool.ty.overrides.rules]
+call-non-callable = "ignore"  # FastMCP v3 rc2 type stubs incorrectly expose FunctionTool
+
 [tool.poe.tasks]
 # Setup
 setup = "uv sync"
