@@ -1,7 +1,7 @@
 # windsurf-teacher
 
-[![ci](https://github.com/detailobsessed/windsurf-teacher/workflows/ci/badge.svg)](https://github.com/detailobsessed/windsurf-teacher/actions?query=workflow%3Aci)
-[![release](https://github.com/detailobsessed/windsurf-teacher/workflows/release/badge.svg)](https://github.com/detailobsessed/windsurf-teacher/actions?query=workflow%3Arelease)
+[![ci](https://github.com/detailobsessed/windsurf-teacher/actions/workflows/ci.yml/badge.svg)](https://github.com/detailobsessed/windsurf-teacher/actions/workflows/ci.yml)
+[![release](https://github.com/detailobsessed/windsurf-teacher/actions/workflows/release.yml/badge.svg)](https://github.com/detailobsessed/windsurf-teacher/actions/workflows/release.yml)
 [![documentation](https://img.shields.io/badge/docs-mkdocs-708FCC.svg?style=flat)](https://detailobsessed.github.io/windsurf-teacher/)
 [![Python 3.14+](https://img.shields.io/badge/python-3.14+-blue.svg)](https://www.python.org/downloads/)
 [![codecov](https://codecov.io/gh/detailobsessed/windsurf-teacher/branch/main/graph/badge.svg)](https://codecov.io/gh/detailobsessed/windsurf-teacher)
@@ -12,7 +12,7 @@
 
 ```text
 coding sessions → hooks capture responses/diffs → SQLite stores structured learnings
-                                                 → export to markdown → NotebookLM flashcards
+                                                 → export to markdown → NotebookLM flashcards (if you want)
 ```
 
 - **Skill** (`@learn-mode`) — changes Cascade's behavior to explain before writing, annotate code with `# LEARN:` comments, and summarize patterns
@@ -90,6 +90,22 @@ uv run windsurf-teacher uninstall
 ```
 
 This removes the skill, hooks, and MCP server entries (leaving other hooks/servers intact). You'll be asked whether to delete the learning database.
+
+## Database
+
+All learning data lives in a single SQLite file at `~/.windsurf-teacher/learnings.db`. Everything is automatic:
+
+- **Created on first use** — the directory and database file are created the first time a hook fires or an MCP tool is called. No manual setup required.
+- **Schema auto-initialized** — 7 tables (sessions, responses, code_changes, commands, concepts, patterns, gotchas), FTS5 full-text search on concepts, and indexes are created via `CREATE TABLE IF NOT EXISTS` on first connection.
+- **WAL mode** — the database uses `PRAGMA journal_mode=WAL` so hooks can write while the CLI reads concurrently.
+- **No migrations (yet)** — the schema is versioned (`schema_version` table) but there are no migration steps since this is v1. Future schema changes will add migration logic in `db.py`.
+- **Deleted on uninstall** — `windsurf-teacher uninstall` prompts whether to delete `~/.windsurf-teacher/` (including the database). If you decline, your data is preserved for a future reinstall.
+- **Backup** — the DB is a single file; copy `~/.windsurf-teacher/learnings.db` to back it up.
+
+## Branch protection
+
+The CI workflow includes a `ci-pass` gate job that aggregates the status of all CI jobs.
+Add a [branch protection rule](https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-protected-branches/managing-a-branch-protection-rule) for `main` requiring the **`ci-pass`** status check to pass before merging.
 
 ## Development
 
