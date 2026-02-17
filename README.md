@@ -12,4 +12,3 @@ Windsurf but you learn as you code
 
 The CI workflow includes a `ci-pass` gate job that aggregates the status of all CI jobs.
 Add a [branch protection rule](https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-a-branch-protection-rule/managing-a-branch-protection-rule) for `main` requiring the **`ci-pass`** status check to pass before merging.
-
