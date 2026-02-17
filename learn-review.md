@@ -7,4 +7,4 @@ auto_execution_mode: 1
 2. Pick 3-5 concepts that are due for review
 3. For each concept, briefly explain it and ask me a question that tests understanding (not memory)
 4. After I answer, confirm whether I got it right and add any nuance I missed
-5. At the end, use `log_concept` to update the review_count for concepts I got right
+5. At the end, use `mark_reviewed` to update the review_count for concepts I got right

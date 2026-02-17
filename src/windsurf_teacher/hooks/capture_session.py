@@ -12,6 +12,7 @@ import logging
 import re
 import sys
 from datetime import UTC, datetime
+from pathlib import PurePath
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -72,7 +73,12 @@ def _handle_post_write_code(conn, data: dict) -> None:
         return
 
     session_id = data.get("trajectory_id") or f"session-{_now_iso()}"
-    project_path = str(file_path).rsplit("/src/", maxsplit=1)[0] if "/src/" in str(file_path) else None
+    fp = PurePath(file_path)
+    try:
+        src_idx = fp.parts.index("src")
+        project_path = str(PurePath(*fp.parts[:src_idx]))
+    except ValueError:
+        project_path = None
     _ensure_session(conn, session_id, project_path)
 
     for edit in edits:

@@ -147,6 +147,7 @@ ignore = [
     "DTZ005",     # Naive datetime in tests is fine
     "PLR0904",    # Test classes naturally have many test methods
 ]
+"src/windsurf_teacher/installer.py" = ["S404"]  # subprocess.list2cmdline is a pure string formatter, not a process spawner
 "install.py" = ["T201"]   # CLI script needs print()
 "uninstall.py" = ["T201"] # CLI script needs print()
 
@@ -192,7 +193,7 @@ python-version = "3.14"
 python = ".venv"
 
 [[tool.ty.overrides]]
-include = ["tests/test_mcp_server.py"]
+include = ["tests/test_mcp_server.py", "src/windsurf_teacher/cli.py"]
 
 [tool.ty.overrides.rules]
 call-non-callable = "ignore"  # FastMCP v3 rc2 type stubs incorrectly expose FunctionTool

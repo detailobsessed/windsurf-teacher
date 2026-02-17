@@ -5,6 +5,8 @@ from __future__ import annotations
 import json
 import shlex
 import shutil
+import subprocess
+import sys
 from pathlib import Path
 
 PROJECT_DIR = Path(__file__).resolve().parent.parent.parent
@@ -14,6 +16,7 @@ HOOKS_CONFIG = WINDSURF_NEXT_DIR / "hooks.json"
 MCP_CONFIG = WINDSURF_NEXT_DIR / "mcp_config.json"
 DB_DIR = Path.home() / ".windsurf-teacher"
 
+WORKFLOW_DIR = WINDSURF_NEXT_DIR / "global_workflows"
 HOOK_EVENTS = ("post_cascade_response", "post_write_code", "post_run_command")
 MCP_SERVER_NAME = "windsurf-teacher"
 
@@ -23,8 +26,11 @@ def _print(msg: str) -> None:
 
 
 def _python_path() -> str:
-    """Resolve the project venv's python3 absolute path."""
-    venv_python = PROJECT_DIR / ".venv" / "bin" / "python3"
+    """Resolve the project venv's python absolute path (cross-platform)."""
+    if sys.platform == "win32":
+        venv_python = PROJECT_DIR / ".venv" / "Scripts" / "python.exe"
+    else:
+        venv_python = PROJECT_DIR / ".venv" / "bin" / "python3"
     if not venv_python.exists():
         msg = f"Venv python not found at {venv_python}. Run 'uv sync' first."
         raise FileNotFoundError(msg)
@@ -37,7 +43,11 @@ def _hooks_dir() -> str:
 
 
 def _build_hook_command() -> str:
-    return f"{shlex.quote(_python_path())} {shlex.quote(f'{_hooks_dir()}/capture_session.py')}"
+    python = _python_path()
+    script = str(Path(_hooks_dir()) / "capture_session.py")
+    if sys.platform == "win32":
+        return subprocess.list2cmdline([python, script])
+    return f"{shlex.quote(python)} {shlex.quote(script)}"
 
 
 def _load_json(path: Path) -> dict:
@@ -91,6 +101,17 @@ def _install_mcp_server() -> None:
 
     _save_json(MCP_CONFIG, config)
     _print(f"  ✓ MCP server registered in {MCP_CONFIG}")
+
+
+def _install_workflow() -> None:
+    """Copy learn-review.md into the global workflows directory."""
+    source = PROJECT_DIR / "learn-review.md"
+    if not source.exists():
+        _print(f"  ⚠ learn-review.md not found at {source}")
+        return
+    WORKFLOW_DIR.mkdir(parents=True, exist_ok=True)
+    shutil.copy2(source, WORKFLOW_DIR / "learn-review.md")
+    _print(f"  ✓ Workflow installed to {WORKFLOW_DIR}")
 
 
 def _create_db_dir() -> None:
@@ -151,12 +172,23 @@ def _uninstall_mcp_server() -> None:
         _print("  - MCP server not registered, skipping")
 
 
+def _uninstall_workflow() -> None:
+    """Remove the learn-review workflow file."""
+    workflow_file = WORKFLOW_DIR / "learn-review.md"
+    if workflow_file.exists():
+        workflow_file.unlink()
+        _print(f"  ✓ Removed workflow: {workflow_file}")
+    else:
+        _print("  - Workflow not installed, skipping")
+
+
 def run_install() -> None:
     """Install windsurf-teacher skill, hooks, and MCP server into Windsurf Next."""
     _print("Installing windsurf-teacher...")
     _install_skill()
     _install_hooks()
     _install_mcp_server()
+    _install_workflow()
     _create_db_dir()
     _print("\nDone! Restart Windsurf to activate.")
 
@@ -167,6 +199,7 @@ def run_uninstall() -> None:
     _uninstall_skill()
     _uninstall_hooks()
     _uninstall_mcp_server()
+    _uninstall_workflow()
 
     if DB_DIR.exists():
         answer = input(f"\nDelete learning database at {DB_DIR}? [y/N] ").strip().lower()

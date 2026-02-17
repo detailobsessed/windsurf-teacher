@@ -269,3 +269,24 @@ def get_session_summary(session_id: str = "") -> str:
         return "\n".join(lines)
     finally:
         conn.close()
+
+
+@mcp.tool
+def mark_reviewed(concept_id: int) -> str:
+    """Mark a concept as reviewed, incrementing its review count.
+
+    Call this after a user correctly answers a review question.
+    """
+    conn = get_db()
+    try:
+        row = conn.execute("SELECT id, name FROM concepts WHERE id = ?", (concept_id,)).fetchone()
+        if not row:
+            return f"Concept {concept_id} not found."
+        conn.execute(
+            "UPDATE concepts SET reviewed_at = ?, review_count = review_count + 1 WHERE id = ?",
+            (_now_iso(), concept_id),
+        )
+        conn.commit()
+        return f"✓ Marked **{row['name']}** as reviewed (concept {concept_id})."
+    finally:
+        conn.close()

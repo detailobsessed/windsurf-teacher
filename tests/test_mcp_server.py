@@ -12,6 +12,7 @@ from windsurf_teacher.mcp_server import (
     log_concept,
     log_gotcha,
     log_pattern,
+    mark_reviewed,
     query_concepts,
 )
 
@@ -173,3 +174,26 @@ class TestGetSessionSummary:
         db_conn.commit()
         result = get_session_summary()
         assert "new" in result
+
+
+@pytest.mark.usefixtures("_patch_db")
+class TestMarkReviewed:
+    def test_marks_concept_reviewed(self):
+        result = log_concept(name="async/await", explanation="coroutine syntax")
+        concept_id = int(result.split("id ")[1])
+        result = mark_reviewed(concept_id=concept_id)
+        assert "async/await" in result
+        assert "✓" in result
+
+    def test_increments_review_count(self, db_conn):
+        log_concept(name="generators", explanation="yield keyword")
+        row = db_conn.execute("SELECT id FROM concepts WHERE name = 'generators'").fetchone()
+        mark_reviewed(concept_id=row["id"])
+        mark_reviewed(concept_id=row["id"])
+        updated = db_conn.execute("SELECT review_count, reviewed_at FROM concepts WHERE id = ?", (row["id"],)).fetchone()
+        assert updated["review_count"] == 2
+        assert updated["reviewed_at"] is not None
+
+    def test_not_found(self):
+        result = mark_reviewed(concept_id=9999)
+        assert "not found" in result
