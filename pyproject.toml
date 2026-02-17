@@ -147,6 +147,8 @@ ignore = [
     "DTZ005",     # Naive datetime in tests is fine
     "PLR0904",    # Test classes naturally have many test methods
 ]
+"install.py" = ["T201"]   # CLI script needs print()
+"uninstall.py" = ["T201"] # CLI script needs print()
 
 [tool.ruff.lint.pylint]
 # All values are pylint defaults — do not inflate to hide violations.
