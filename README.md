@@ -43,7 +43,8 @@ This installs:
 1. The `learn-mode` skill into `~/.codeium/windsurf-next/skills/learn-mode/`
 2. Hook entries into `~/.codeium/windsurf-next/hooks.json` (merged with existing hooks)
 3. The MCP server into `~/.codeium/windsurf-next/mcp_config.json`
-4. The learning database directory at `~/.windsurf-teacher/`
+4. The `learn-review.md` workflow into `~/.codeium/windsurf-next/global_workflows/`
+5. The learning database directory at `~/.windsurf-teacher/`
 
 Restart Windsurf after installing.
 
@@ -80,7 +81,7 @@ windsurf-teacher serve
 
 ### Global workflow
 
-Copy `learn-review.md` to `~/.codeium/windsurf-next/global_workflows/` to add a `/learn-review` command that quizzes you on recent concepts.
+The installer automatically copies `learn-review.md` to `~/.codeium/windsurf-next/global_workflows/`. Type `/learn-review` in Cascade to start a spaced-repetition quiz on recent concepts.
 
 ## Uninstalling
 

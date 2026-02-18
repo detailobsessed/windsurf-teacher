@@ -117,6 +117,9 @@ CREATE INDEX IF NOT EXISTS idx_gotchas_concept ON gotchas(concept_id);
 """
 
 
+_INITIALIZED: set[Path] = set()
+
+
 def _init_db(conn: sqlite3.Connection) -> None:
     """Create tables, FTS5 indexes, and set schema version."""
     conn.executescript(_TABLES_SQL)
@@ -146,5 +149,7 @@ def get_db(db_path: Path | None = None) -> sqlite3.Connection:
     conn.execute("PRAGMA foreign_keys=ON")
     conn.row_factory = sqlite3.Row
 
-    _init_db(conn)
+    if path not in _INITIALIZED:
+        _init_db(conn)
+        _INITIALIZED.add(path)
     return conn

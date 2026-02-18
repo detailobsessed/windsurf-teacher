@@ -28,32 +28,9 @@ def serve() -> None:
 @app.command
 def export(*, days: int = 7, output: str = "") -> None:
     """Export recent learnings to markdown."""
-    conn = get_db()
-    try:
-        cutoff = (datetime.now(tz=UTC) - timedelta(days=days)).isoformat()
-        sections = [f"# Learning Review — Last {days} Days\n"]
+    from windsurf_teacher.mcp_server import export_review_markdown  # noqa: PLC0415
 
-        concepts = conn.execute(
-            "SELECT name, explanation, code_example, tags, source, timestamp FROM concepts WHERE timestamp > ? ORDER BY timestamp DESC",
-            (cutoff,),
-        ).fetchall()
-
-        if concepts:
-            sections.append(f"## Concepts ({len(concepts)})\n")
-            for c in concepts:
-                sections.extend((
-                    f"### {c['name']}",
-                    f"*{c['timestamp'][:10]}* | source: {c['source']}",
-                ))
-                if c["tags"]:
-                    sections.append(f"Tags: {c['tags']}")
-                sections.append(f"\n{c['explanation']}\n")
-                if c["code_example"]:
-                    sections.append(f"```\n{c['code_example']}\n```\n")
-
-        content = "\n".join(sections) if len(sections) > 1 else "No learnings found for this period."
-    finally:
-        conn.close()
+    content = export_review_markdown(days=days)
 
     if output:
         Path(output).write_text(content, encoding="utf-8")

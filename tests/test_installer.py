@@ -12,11 +12,13 @@ from windsurf_teacher.installer import (
     _install_hooks,
     _install_mcp_server,
     _install_skill,
+    _install_workflow,
     _load_json,
     _save_json,
     _uninstall_hooks,
     _uninstall_mcp_server,
     _uninstall_skill,
+    _uninstall_workflow,
     run_install,
     run_uninstall,
 )
@@ -30,6 +32,7 @@ def _patch_paths(tmp_path, monkeypatch):
     monkeypatch.setattr("windsurf_teacher.installer.HOOKS_CONFIG", tmp_path / "windsurf-next" / "hooks.json")
     monkeypatch.setattr("windsurf_teacher.installer.MCP_CONFIG", tmp_path / "windsurf-next" / "mcp_config.json")
     monkeypatch.setattr("windsurf_teacher.installer.DB_DIR", tmp_path / "db")
+    monkeypatch.setattr("windsurf_teacher.installer.WORKFLOW_DIR", tmp_path / "windsurf-next" / "global_workflows")
 
 
 class TestJsonHelpers:
@@ -189,6 +192,7 @@ class TestRunInstall:
         project_dir = tmp_path / "project"
         project_dir.mkdir()
         (project_dir / "SKILL.md").write_text("# skill", encoding="utf-8")
+        (project_dir / "learn-review.md").write_text("---\ndescription: test\n---", encoding="utf-8")
         monkeypatch.setattr("windsurf_teacher.installer.PROJECT_DIR", project_dir)
         monkeypatch.setattr("windsurf_teacher.installer._build_hook_command", lambda: "python capture.py")
 
@@ -226,3 +230,44 @@ class TestRunUninstall:
         run_uninstall()
         out = capsys.readouterr().out
         assert "Done" in out
+
+
+@pytest.mark.usefixtures("_patch_paths")
+class TestInstallWorkflow:
+    def test_copies_workflow(self, tmp_path, monkeypatch, capsys):
+        project_dir = tmp_path / "project"
+        project_dir.mkdir()
+        (project_dir / "learn-review.md").write_text("---\ndescription: test\n---", encoding="utf-8")
+        monkeypatch.setattr("windsurf_teacher.installer.PROJECT_DIR", project_dir)
+
+        _install_workflow()
+        out = capsys.readouterr().out
+        assert "Workflow installed" in out
+        assert (tmp_path / "windsurf-next" / "global_workflows" / "learn-review.md").exists()
+
+    def test_warns_if_workflow_missing(self, tmp_path, monkeypatch, capsys):
+        project_dir = tmp_path / "empty-project"
+        project_dir.mkdir()
+        monkeypatch.setattr("windsurf_teacher.installer.PROJECT_DIR", project_dir)
+
+        _install_workflow()
+        out = capsys.readouterr().out
+        assert "⚠" in out
+
+
+@pytest.mark.usefixtures("_patch_paths")
+class TestUninstallWorkflow:
+    def test_removes_workflow(self, tmp_path, capsys):
+        wf_dir = tmp_path / "windsurf-next" / "global_workflows"
+        wf_dir.mkdir(parents=True)
+        (wf_dir / "learn-review.md").write_text("test", encoding="utf-8")
+
+        _uninstall_workflow()
+        out = capsys.readouterr().out
+        assert "Removed workflow" in out
+        assert not (wf_dir / "learn-review.md").exists()
+
+    def test_no_error_if_missing(self, capsys):
+        _uninstall_workflow()
+        out = capsys.readouterr().out
+        assert "not installed" in out

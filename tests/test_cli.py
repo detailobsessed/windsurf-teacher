@@ -14,6 +14,7 @@ def _patch_db(tmp_path, monkeypatch):
     """Patch get_db in cli to use a temp database."""
     db_path = tmp_path / "test.db"
     monkeypatch.setattr("windsurf_teacher.cli.get_db", lambda: get_db(db_path))
+    monkeypatch.setattr("windsurf_teacher.mcp_server.get_db", lambda: get_db(db_path))
 
 
 @pytest.fixture

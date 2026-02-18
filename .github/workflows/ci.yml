@@ -99,7 +99,14 @@ jobs:
 
     needs:
     - quality
-    runs-on: blacksmith-4vcpu-ubuntu-2404
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+        - blacksmith-4vcpu-ubuntu-2404
+        - macos-latest
+        - windows-latest
+    runs-on: ${{ matrix.os }}
 
     steps:
     - name: Checkout
@@ -128,6 +135,7 @@ jobs:
       run: uv run poe test-cov
 
     - name: Upload coverage to Codecov
+      if: matrix.os == 'blacksmith-4vcpu-ubuntu-2404'
       uses: codecov/codecov-action@v5
       with:
         token: ${{ secrets.CODECOV_TOKEN }}
