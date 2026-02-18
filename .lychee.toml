@@ -13,6 +13,12 @@ exclude = [
     '^mailto:',
     # Localhost URLs (e.g. docs preview in CONTRIBUTING.md)
     '^http://localhost',
+    # GitHub Pages — not deployed yet
+    '^https://detailobsessed\.github\.io/windsurf-teacher',
+    # GitHub Discussions — not enabled yet
+    '^https://github\.com/detailobsessed/windsurf-teacher/discussions',
+    # Workflow badge SVGs — 404 until first workflow run completes
+    '^https://github\.com/detailobsessed/windsurf-teacher/actions/workflows/.+/badge\.svg',
 ]
 
 # Exclude local/private addresses
