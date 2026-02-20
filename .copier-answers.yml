@@ -1,11 +1,12 @@
 # Changes here will be overwritten by Copier.
-_commit: 0.28.5
+_commit: 0.29.4
 _src_path: gh:detailobsessed/copier-uv-bleeding
 author_email: ismart@gmail.com
 author_fullname: Ismar Iljazovic
 author_username: ichoosetoaccept
 cli_framework: none
 copyright_license: MIT
+custom_pypi_index_url: ''
 project_description: Windsurf but you learn as you code
 project_name: windsurf-teacher
 project_type: app
