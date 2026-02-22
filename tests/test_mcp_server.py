@@ -9,6 +9,7 @@ from windsurf_teacher.mcp_server import (
     export_review_markdown,
     get_learning_gaps,
     get_session_summary,
+    get_stats,
     log_concept,
     log_gotcha,
     log_pattern,
@@ -39,6 +40,8 @@ class TestLogConcept:
         result = log_concept(name="walrus operator", explanation=":= assigns and returns")
         assert "walrus operator" in result
         assert "logged" in result
+        assert "log_gotcha" in result
+        assert "log_pattern" in result
 
     def test_logs_with_tags(self):
         result = log_concept(name="fstring", explanation="formatted strings", tags=["python", "syntax"])
@@ -59,6 +62,7 @@ class TestLogPattern:
         result = log_pattern(name="factory", description="creates objects")
         assert "factory" in result
         assert "logged" in result
+        assert "log_concept" in result
 
     def test_increments_existing_pattern(self):
         log_pattern(name="singleton", description="one instance")
@@ -90,10 +94,13 @@ class TestLogGotcha:
         gotcha = db_conn.execute("SELECT * FROM gotchas").fetchone()
         assert gotcha["concept_id"] is not None
 
-    def test_unlinked_gotcha(self, db_conn):
-        log_gotcha(description="standalone gotcha", concept_name="nonexistent")
+    def test_unlinked_gotcha_warns(self, db_conn):
+        result = log_gotcha(description="standalone gotcha", concept_name="nonexistent")
         gotcha = db_conn.execute("SELECT * FROM gotchas").fetchone()
         assert gotcha["concept_id"] is None
+        assert "⚠" in result
+        assert "nonexistent" in result
+        assert "query_concepts" in result
 
 
 @pytest.mark.usefixtures("_patch_db")
@@ -116,6 +123,12 @@ class TestQueryConcepts:
     def test_no_results(self):
         result = query_concepts(search="zzzznonexistent")
         assert "No concepts found" in result
+        assert "log_concept" in result
+
+    def test_results_include_ids(self):
+        log_concept(name="dataclass", explanation="auto-generates __init__")
+        result = query_concepts()
+        assert "id=" in result
 
     def test_limit(self):
         for i in range(5):
@@ -131,6 +144,8 @@ class TestGetLearningGaps:
         result = get_learning_gaps()
         assert "pathlib" in result
         assert "never reviewed" in result
+        assert "id=" in result
+        assert "mark_reviewed" in result
 
     def test_no_gaps(self):
         result = get_learning_gaps()
@@ -180,10 +195,11 @@ class TestGetSessionSummary:
 class TestMarkReviewed:
     def test_marks_concept_reviewed(self):
         result = log_concept(name="async/await", explanation="coroutine syntax")
-        concept_id = int(result.split("id ")[1])
+        concept_id = int(result.split("id ")[1].split(".")[0])
         result = mark_reviewed(concept_id=concept_id)
         assert "async/await" in result
         assert "✓" in result
+        assert "get_learning_gaps" in result
 
     def test_increments_review_count(self, db_conn):
         log_concept(name="generators", explanation="yield keyword")
@@ -194,6 +210,57 @@ class TestMarkReviewed:
         assert updated["review_count"] == 2
         assert updated["reviewed_at"] is not None
 
-    def test_not_found(self):
+    def test_not_found_by_id(self):
         result = mark_reviewed(concept_id=9999)
         assert "not found" in result
+        assert "query_concepts" in result
+
+    def test_mark_reviewed_by_name(self):
+        log_concept(name="list comprehension", explanation="concise list creation")
+        result = mark_reviewed(concept_name="list comprehension")
+        assert "list comprehension" in result
+        assert "✓" in result
+
+    def test_mark_reviewed_by_name_not_found(self):
+        result = mark_reviewed(concept_name="nonexistent_concept")
+        assert "not found" in result
+        assert "query_concepts" in result
+
+    def test_mark_reviewed_no_args(self):
+        result = mark_reviewed()
+        assert "Provide either" in result
+        assert "query_concepts" in result
+
+    def test_mark_reviewed_id_takes_precedence(self, db_conn):
+        log_concept(name="decorators", explanation="wraps functions")
+        row = db_conn.execute("SELECT id FROM concepts WHERE name = 'decorators'").fetchone()
+        result = mark_reviewed(concept_id=row["id"], concept_name="wrong_name")
+        assert "decorators" in result
+        assert "✓" in result
+
+
+@pytest.mark.usefixtures("_patch_db")
+class TestGetStats:
+    def test_empty_db(self):
+        result = get_stats()
+        assert "Learning Database Stats" in result
+        assert "Concepts**: 0" in result
+        assert "log_concept" in result
+
+    def test_with_data(self):
+        log_concept(name="typing", explanation="type hints")
+        log_pattern(name="factory", description="creates objects")
+        log_gotcha(description="mutable defaults")
+        result = get_stats()
+        assert "Concepts**: 1" in result
+        assert "Patterns**: 1" in result
+        assert "Gotchas**: 1" in result
+        assert "get_learning_gaps" in result
+
+    def test_all_reviewed(self, db_conn):
+        log_concept(name="enum", explanation="enumerations")
+        row = db_conn.execute("SELECT id FROM concepts WHERE name = 'enum'").fetchone()
+        mark_reviewed(concept_id=row["id"])
+        result = get_stats()
+        assert "All concepts reviewed" in result
+        assert "export_review_markdown" in result
