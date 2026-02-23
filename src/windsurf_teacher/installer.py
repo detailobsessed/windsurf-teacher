@@ -22,6 +22,12 @@ EDITIONS: dict[str, str] = {
     "windsurf-insiders": "Windsurf Insiders",
 }
 
+APP_BUNDLES: dict[str, str] = {
+    "windsurf": "Windsurf.app",
+    "windsurf-next": "Windsurf - Next.app",
+    "windsurf-insiders": "Windsurf - Insiders.app",
+}
+
 
 @dataclass(frozen=True)
 class EditionPaths:
@@ -54,10 +60,27 @@ def _codeium_base() -> Path:
     return Path.home() / ".codeium"
 
 
+def _applications_dir() -> Path:
+    return Path("/Applications")
+
+
+def _is_app_installed(edition: str) -> bool:
+    """Check whether the Windsurf app bundle exists for *edition*.
+
+    On non-macOS platforms the check is skipped (returns ``True``).
+    """
+    if sys.platform != "darwin":
+        return True
+    bundle = APP_BUNDLES.get(edition)
+    if not bundle:
+        return True
+    return (_applications_dir() / bundle).is_dir()
+
+
 def detect_editions(*, codeium_base: Path | None = None) -> list[EditionPaths]:
     """Return EditionPaths for every Windsurf edition found on disk."""
     base = codeium_base or _codeium_base()
-    return [EditionPaths.for_edition(name, codeium_base=base) for name in EDITIONS if (base / name).is_dir()]
+    return [EditionPaths.for_edition(name, codeium_base=base) for name in EDITIONS if (base / name).is_dir() and _is_app_installed(name)]
 
 
 def _prompt_editions(detected: list[EditionPaths]) -> list[EditionPaths]:
@@ -118,7 +141,7 @@ def _python_path() -> str:
     if not venv_python.exists():
         msg = f"Venv python not found at {venv_python}. Run 'uv sync' first."
         raise FileNotFoundError(msg)
-    return str(venv_python.resolve())
+    return str(venv_python)
 
 
 def _hooks_dir() -> str:

@@ -14,6 +14,7 @@ from windsurf_teacher.installer import (
     _install_mcp_server,
     _install_skill,
     _install_workflow,
+    _is_app_installed,
     _load_json,
     _prompt_editions,
     _save_json,
@@ -60,8 +61,30 @@ class TestEditionPaths:
         assert paths.label == "windsurf-custom"
 
 
+class TestIsAppInstalled:
+    def test_returns_true_when_bundle_exists(self, tmp_path, monkeypatch):
+        monkeypatch.setattr("windsurf_teacher.installer._applications_dir", lambda: tmp_path)
+        monkeypatch.setattr("windsurf_teacher.installer.sys", type("FakeSys", (), {"platform": "darwin"})())
+        (tmp_path / "Windsurf - Next.app").mkdir()
+        assert _is_app_installed("windsurf-next") is True
+
+    def test_returns_false_when_bundle_missing(self, tmp_path, monkeypatch):
+        monkeypatch.setattr("windsurf_teacher.installer._applications_dir", lambda: tmp_path)
+        monkeypatch.setattr("windsurf_teacher.installer.sys", type("FakeSys", (), {"platform": "darwin"})())
+        assert _is_app_installed("windsurf") is False
+
+    def test_skipped_on_non_darwin(self, monkeypatch):
+        monkeypatch.setattr("windsurf_teacher.installer.sys", type("FakeSys", (), {"platform": "linux"})())
+        assert _is_app_installed("windsurf") is True
+
+    def test_unknown_edition_returns_true(self, monkeypatch):
+        monkeypatch.setattr("windsurf_teacher.installer.sys", type("FakeSys", (), {"platform": "darwin"})())
+        assert _is_app_installed("windsurf-custom") is True
+
+
 class TestDetectEditions:
-    def test_detects_existing_editions(self, tmp_path):
+    def test_detects_existing_editions(self, tmp_path, monkeypatch):
+        monkeypatch.setattr("windsurf_teacher.installer._is_app_installed", lambda _: True)
         (tmp_path / "windsurf").mkdir()
         (tmp_path / "windsurf-next").mkdir()
         editions = detect_editions(codeium_base=tmp_path)
@@ -72,12 +95,30 @@ class TestDetectEditions:
     def test_returns_empty_when_none_found(self, tmp_path):
         assert detect_editions(codeium_base=tmp_path) == []
 
-    def test_ignores_unknown_dirs(self, tmp_path):
+    def test_ignores_unknown_dirs(self, tmp_path, monkeypatch):
+        monkeypatch.setattr("windsurf_teacher.installer._is_app_installed", lambda _: True)
         (tmp_path / "windsurf-next").mkdir()
         (tmp_path / "random-other").mkdir()
         editions = detect_editions(codeium_base=tmp_path)
         assert len(editions) == 1
         assert editions[0].name == "windsurf-next"
+
+    def test_skips_edition_without_app(self, tmp_path, monkeypatch):
+        monkeypatch.setattr(
+            "windsurf_teacher.installer._is_app_installed",
+            lambda name: name != "windsurf",
+        )
+        (tmp_path / "windsurf").mkdir()
+        (tmp_path / "windsurf-next").mkdir()
+        editions = detect_editions(codeium_base=tmp_path)
+        assert len(editions) == 1
+        assert editions[0].name == "windsurf-next"
+
+    def test_config_dir_without_app_not_detected(self, tmp_path, monkeypatch):
+        monkeypatch.setattr("windsurf_teacher.installer._is_app_installed", lambda _: False)
+        (tmp_path / "windsurf").mkdir()
+        (tmp_path / "windsurf-next").mkdir()
+        assert detect_editions(codeium_base=tmp_path) == []
 
 
 class TestPromptEditions:
@@ -124,6 +165,7 @@ class TestResolveEditions:
         (tmp_path / "windsurf").mkdir()
         (tmp_path / "windsurf-next").mkdir()
         monkeypatch.setattr("windsurf_teacher.installer._codeium_base", lambda: tmp_path)
+        monkeypatch.setattr("windsurf_teacher.installer._is_app_installed", lambda _: True)
 
         result = resolve_editions("windsurf-next")
         assert len(result) == 1
@@ -134,6 +176,7 @@ class TestResolveEditions:
         (tmp_path / "windsurf-next").mkdir()
         (tmp_path / "windsurf-insiders").mkdir()
         monkeypatch.setattr("windsurf_teacher.installer._codeium_base", lambda: tmp_path)
+        monkeypatch.setattr("windsurf_teacher.installer._is_app_installed", lambda _: True)
 
         result = resolve_editions("all")
         assert len(result) == 3
@@ -141,6 +184,7 @@ class TestResolveEditions:
     def test_resolve_invalid_edition(self, tmp_path, monkeypatch, capsys):
         (tmp_path / "windsurf-next").mkdir()
         monkeypatch.setattr("windsurf_teacher.installer._codeium_base", lambda: tmp_path)
+        monkeypatch.setattr("windsurf_teacher.installer._is_app_installed", lambda _: True)
 
         result = resolve_editions("windsurf-bogus")
         assert result == []
