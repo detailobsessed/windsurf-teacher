@@ -24,7 +24,7 @@ coding sessions → hooks capture responses/diffs → SQLite stores structured l
 
 - Python 3.14+
 - [uv](https://docs.astral.sh/uv/)
-- [Windsurf Next](https://windsurf.com)
+- [Windsurf](https://windsurf.com) (any edition: stable, Next, or Insiders)
 
 ## Installation
 
@@ -34,17 +34,23 @@ git clone https://github.com/detailobsessed/windsurf-teacher.git
 cd windsurf-teacher
 uv sync
 
-# Install into Windsurf Next (skill, hooks, MCP server)
+# Install — auto-detects installed Windsurf editions and prompts
 uv run windsurf-teacher install
+
+# Or target a specific edition / all detected editions
+uv run windsurf-teacher install --edition windsurf-next
+uv run windsurf-teacher install --edition all
 ```
 
-This installs:
+This installs (per edition):
 
-1. The `learn-mode` skill into `~/.codeium/windsurf-next/skills/learn-mode/`
-2. Hook entries into `~/.codeium/windsurf-next/hooks.json` (merged with existing hooks)
-3. The MCP server into `~/.codeium/windsurf-next/mcp_config.json`
-4. The `learn-review.md` workflow into `~/.codeium/windsurf-next/global_workflows/`
-5. The learning database directory at `~/.windsurf-teacher/`
+1. The `learn-mode` skill into `~/.codeium/<edition>/skills/learn-mode/`
+2. Hook entries into `~/.codeium/<edition>/hooks.json` (merged with existing hooks)
+3. The MCP server into `~/.codeium/<edition>/mcp_config.json`
+4. The `learn-review.md` workflow into `~/.codeium/<edition>/global_workflows/`
+5. The learning database directory at `~/.windsurf-teacher/` (shared across editions)
+
+Supported editions: `windsurf` (stable), `windsurf-next` (beta), `windsurf-insiders`.
 
 Restart Windsurf after installing.
 
@@ -111,7 +117,6 @@ Add a [branch protection rule](https://docs.github.com/en/repositories/configuri
 
 ```bash
 uv sync                  # Install all dependencies
-uv run poe check         # Lint + typecheck
 uv run poe test          # Run tests
 uv run poe test-cov      # Tests with coverage
 ```
@@ -123,7 +128,7 @@ src/windsurf_teacher/
 ├── db.py                 # SQLite schema (7 tables + FTS5), get_db()
 ├── hooks/
 │   └── capture_session.py  # Hook handler (stdin JSON → SQLite)
-├── mcp_server.py         # FastMCP v3 server (7 tools)
+├── mcp_server.py         # FastMCP v3 server (8 tools)
 ├── cli.py                # CLI (cyclopts)
 └── installer.py          # Install/uninstall logic
 

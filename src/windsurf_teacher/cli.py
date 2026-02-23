@@ -123,19 +123,19 @@ def review() -> None:
 
 
 @app.command
-def install() -> None:
-    """Install windsurf-teacher into Windsurf Next."""
+def install(*, edition: str = "") -> None:
+    """Install windsurf-teacher into Windsurf (auto-detects editions)."""
     from windsurf_teacher.installer import run_install  # noqa: PLC0415
 
-    run_install()
+    run_install(edition=edition)
 
 
 @app.command
-def uninstall() -> None:
-    """Uninstall windsurf-teacher from Windsurf Next."""
+def uninstall(*, edition: str = "") -> None:
+    """Uninstall windsurf-teacher from Windsurf."""
     from windsurf_teacher.installer import run_uninstall  # noqa: PLC0415
 
-    run_uninstall()
+    run_uninstall(edition=edition)
 
 
 def _print(*args: object) -> None:
